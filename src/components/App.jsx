@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchGallery } from './API/Api';
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
@@ -10,61 +10,60 @@ import { Button } from './Button/Button';
 import { Modal } from './Modal/Modal';
 import css from './App.module.css';
 
-export class App extends Component {
-  state = {
-    images: [],
-    searchQuery: '',
-    page: 1,
-    isLoading: false,
-    error: null,
-    foundImages: null,
-    currentLargeImg: null,
-  };
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [foundImages, setFoundImages] = useState(null);
+  const [currentLargeImg, setCurrentLargeImg] = useState(null);
+  const [currentAlt, setCurrentAlt] = useState(null);
 
-  setInitialParams = searchQuery => {
-    if (searchQuery === '') {
+  const setInitialParams = search => {
+    if (search === '') {
       return iziToast.warning({
-        message: 'Enter your search parameters',
+        message: 'Enter the search value',
         messageColor: 'white',
         backgroundColor: 'lightred',
-        timeout: 3000,
+        timeout: 1500,
         position: 'topLeft',
       });
     }
 
-    if (searchQuery === this.state.searchQuery) {
+    if (searchQuery === search) {
       return;
     }
 
-    this.setState({
-      images: [],
-      searchQuery,
-      page: 1,
-    });
+    setImages([]);
+    setSearchQuery(search);
+    setPage(1);
   };
 
-  loadMore = () => {
-    this.setState(({ page }) => ({ page: page + 1 }));
+  const loadMore = () => {
+    setPage(s => s + 1);
   };
 
-  addImages = async (searchQuery, page) => {
-    this.setState({ isLoading: true });
+  const addImages = async (searchQuery, page) => {
+    setIsLoading(true);
 
     try {
+      if (!searchQuery) {
+        return;
+      }
       const data = await fetchGallery(searchQuery, page);
+      setFoundImages(data.totalHits);
       const { hits: newImages, totalHits: foundImages } = data;
 
-      this.setState(oldState => ({
-        images: [...oldState.images, ...newImages],
-      }));
+      setImages(oldImages => [...oldImages, ...newImages]);
 
-      if (foundImages !== this.state.foundImages) {
-        this.setState({ foundImages });
+      if (data.totalHits !== foundImages) {
+        setImages({ foundImages });
       }
 
-      if (data.hits.length === 0) {
+      if (data.totalHits === 0) {
         iziToast.warning({
-          message: 'Sorry, there are no images matching your search query. Please try again.',
+          message: 'Sorry, no matches in your query',
           messageColor: 'white',
           backgroundColor: 'lightred',
           timeout: 3000,
@@ -72,45 +71,38 @@ export class App extends Component {
         });
       }
     } catch (error) {
-      this.setState({ error });
+      setError(error);
     } finally {
-      this.setState({ isLoading: false });
+      setIsLoading(false);
     }
   };
 
-  openModal = (src, alt) => {
-    this.setState(state => ({ ...state, currentLargeImg: { src, alt } }));
+  const openModal = (src, alt) => {
+    setCurrentLargeImg(src);
+    setCurrentAlt(alt);
   };
 
-  closeModal = () => {
-    this.setState({ currentLargeImg: null });
+  const closeModal = () => {
+    setCurrentLargeImg(null);
   };
+  useEffect(() => {
+    addImages(searchQuery, page);
+  }, [page, searchQuery]);
 
-  componentDidUpdate(_, prevState) {
-    if (prevState.page !== this.state.page || prevState.searchQuery !== this.state.searchQuery) {
-      const { searchQuery, page } = this.state;
-      this.addImages(searchQuery, page);
-    }
-  }
-
-  render() {
-    const { images, isLoading, error, foundImages, currentLargeImg } = this.state;
-
-    return (
-      <div className={css.app}>
-        <Searchbar onSubmit={this.setInitialParams} />
-        {error && <p>Whoops, something went wrong: {error.message}</p>}
-        {isLoading && <Loader />}
-        {images.length > 0 && (
-          <>
-            <ImageGallery items={images} openModal={this.openModal} />
-            {images.length < foundImages && <Button loadMore={this.loadMore} />}
-          </>
-        )}
-        {currentLargeImg && <Modal closeModal={this.closeModal} imgData={currentLargeImg} />}
-      </div>
-    );
-  }
-}
-
-export default App;
+  return (
+    <div className={css.app}>
+      <Searchbar onSubmit={setInitialParams} />
+      {error && <p>Whoops, something went wrong: {error.message}</p>}
+      {isLoading && <Loader />}
+      {images.length > 0 && (
+        <>
+          <ImageGallery items={images} openModal={openModal} />
+          {images.length < foundImages && <Button loadMore={loadMore} />}
+        </>
+      )}
+      {currentLargeImg && (
+        <Modal closeModal={closeModal} imgData={currentLargeImg} imgAlt={currentAlt} />
+      )}
+    </div>
+  );
+};
