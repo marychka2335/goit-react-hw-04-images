@@ -45,43 +45,42 @@ export const App = () => {
   };
 
   useEffect(() => {
+    const addImages = async (searchQuery, page) => {
+      try {
+        if (!searchQuery) {
+          return;
+        }
+        const data = await fetchGallery(searchQuery, page);
+        
+        setIsLoading(true);
+        setFoundImages(data.totalHits);
+        const { hits: newImages, totalHits: foundImages } = data;
+  
+        setImages(oldImages => [...oldImages, ...newImages]);
+  
+        if (data.totalHits !== foundImages) {
+          setImages({ foundImages });
+        }
+  
+        if (data.totalHits === 0) {
+          iziToast.warning({
+            message: 'Sorry, no matches in your query',
+            messageColor: 'white',
+            backgroundColor: 'lightred',
+            timeout: 3000,
+            position: 'topLeft',
+          });
+        }
+      } catch (error) {
+        setError(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     addImages(searchQuery, page);
   }, [page, searchQuery]);
   
-  const addImages = async (searchQuery, page) => {
-    setIsLoading(true);
-
-    try {
-      if (!searchQuery) {
-        return;
-      }
-      const data = await fetchGallery(searchQuery, page);
-      setFoundImages(data.totalHits);
-      const { hits: newImages, totalHits: foundImages } = data;
-
-      setImages(oldImages => [...oldImages, ...newImages]);
-
-      if (data.totalHits !== foundImages) {
-        setImages({ foundImages });
-      }
-
-      if (data.totalHits === 0) {
-        iziToast.warning({
-          message: 'Sorry, no matches in your query',
-          messageColor: 'white',
-          backgroundColor: 'lightred',
-          timeout: 3000,
-          position: 'topLeft',
-        });
-      }
-    } catch (error) {
-      setError(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const openModal = (src, alt) => {
+    const openModal = (src, alt) => {
     setCurrentLargeImg(src);
     setCurrentAlt(alt);
   };

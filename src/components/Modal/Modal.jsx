@@ -10,15 +10,20 @@ export const Modal = ({ closeModal, imgData, imgAlt }) => {
     }
   };
 
-  const handleEcsapeKey = evt => {
+  const handleEscapeKey = evt => {
     if (evt.key === 'Escape') {
       closeModal();
     }
   };
 
   useEffect(() => {
-    document.addEventListener('keydown', handleEcsapeKey);
-  });
+    document.addEventListener('keydown', handleEscapeKey);
+
+  return () => {
+    document.removeEventListener('keydown', handleEscapeKey);
+  };
+}, [closeModal]);
+
 
   return (
     <div className={css.overlay} onClick={handleOverlayClick}>
