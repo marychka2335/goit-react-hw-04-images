@@ -44,6 +44,10 @@ export const App = () => {
     setPage(s => s + 1);
   };
 
+  useEffect(() => {
+    addImages(searchQuery, page);
+  }, [page, searchQuery]);
+  
   const addImages = async (searchQuery, page) => {
     setIsLoading(true);
 
@@ -85,9 +89,6 @@ export const App = () => {
   const closeModal = () => {
     setCurrentLargeImg(null);
   };
-  useEffect(() => {
-    addImages(searchQuery, page);
-  }, [page, searchQuery]);
 
   return (
     <div className={css.app}>
